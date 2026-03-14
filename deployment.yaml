@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline-monitor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pipeline-monitor
+  template:
+    metadata:
+      labels:
+        app: pipeline-monitor
+    spec:
+      containers:
+      - name: pipeline-monitor
+        image: ujwalnagrikar/pipeline-monitor:latest
+        ports:
+        - containerPort: 8080
