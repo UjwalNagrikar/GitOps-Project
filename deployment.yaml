@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: pipeline-monitor
-        image: ujwalnagrikar/pipeline-monitor:v1
+        image: ujwalnagrikar/pipeline-monitor:v2
         ports:
         - containerPort: 80
         resources:
