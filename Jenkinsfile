@@ -14,7 +14,6 @@ pipeline
  
         stage('Checkout') {
             steps {
-                echo '📥 Cloning repository...'
                 git branch: 'main',
                     credentialsId: 'github-credentials',
                     url: "${GITHUB_REPO}"
@@ -29,7 +28,6 @@ pipeline
                         script: 'git rev-parse --short HEAD',
                         returnStdout: true
                     ).trim()
-                    echo "🏷️  Image tag: ${env.IMAGE_TAG}"
                 }
             }
         }
@@ -88,7 +86,6 @@ pipeline
 
         stage('Verify Deployment') {
             steps {
-                echo '🔍 Verifying pods are running...'
                 sh """
                     kubectl get pods -l app=pipeline-monitor
                     
@@ -104,13 +101,11 @@ pipeline
     post {
         success {
             echo """
-            ✅ Pipeline SUCCESS
             Image : ${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}
             Repo  : ${GITHUB_REPO}
             """
         }
         failure {
-            echo '❌ Pipeline FAILED — check logs above'
         }
         always {
             // Clean up local docker images
