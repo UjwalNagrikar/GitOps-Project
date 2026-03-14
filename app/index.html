@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pipeline Monitor — DevOps Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080a;
+  --bg2:#0d0f12;
+  --bg3:#12151a;
+  --bg4:#181c22;
+  --border:#1c2128;
+  --border2:#252d38;
+  --green:#22d3a5;
+  --green-d:#15a07a;
+  --green-glow:rgba(34,211,165,0.12);
+  --blue:#60a5fa;
+  --blue-glow:rgba(96,165,250,0.1);
+  --amber:#fbbf24;
+  --amber-glow:rgba(251,191,36,0.1);
+  --red:#f87171;
+  --red-glow:rgba(248,113,113,0.1);
+  --purple:#a78bfa;
+  --text:#dde4ec;
+  --text2:#6b7d8f;
+  --text3:#374555;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Space Grotesk',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+
+/* SCANLINE EFFECT */
+body::after{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+  pointer-events:none;z-index:9999;
+}
+
+/* TOPBAR */
+.topbar{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:0.6rem 1.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.logo{font-family:var(--sans);font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.topbar-right{display:flex;align-items:center;gap:1.5rem}
+.sys-time{font-size:11px;color:var(--text3)}
+.env-badge{font-size:10px;padding:2px 8px;border-radius:3px;border:1px solid rgba(34,211,165,0.3);color:var(--green);background:var(--green-glow);letter-spacing:0.08em}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 45px)}
+
+/* SIDEBAR */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:1rem 0}
+.sidebar-section{padding:0 1rem;margin-bottom:1.5rem}
+.sidebar-label{font-size:10px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;padding:0 0.5rem;margin-bottom:0.5rem}
+.nav-item{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;
+  cursor:pointer;font-size:12px;color:var(--text2);
+  transition:all 0.15s;border:1px solid transparent;
+  margin-bottom:2px;
+}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--green-glow);color:var(--green);border-color:rgba(34,211,165,0.2)}
+.nav-icon{width:16px;text-align:center;font-size:12px}
+.status-dot{width:6px;height:6px;border-radius:50%;margin-left:auto}
+.s-green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.s-amber{background:var(--amber)}
+.s-red{background:var(--red);box-shadow:0 0 6px var(--red)}
+.s-gray{background:var(--text3)}
+
+.sidebar-divider{height:1px;background:var(--border);margin:0.5rem 1rem 1rem}
+
+/* MAIN */
+.main{padding:1.5rem;overflow:auto}
+
+/* SECTION HEADER */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.section-title{font-family:var(--sans);font-size:16px;font-weight:600;color:var(--text)}
+.section-sub{font-size:11px;color:var(--text3);margin-top:1px}
+
+/* METRIC CARDS ROW */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
+@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.mc{
+  background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  padding:1rem 1.25rem;position:relative;overflow:hidden;
+}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:6px 6px 0 0}
+.mc.green::before{background:var(--green)}
+.mc.blue::before{background:var(--blue)}
+.mc.amber::before{background:var(--amber)}
+.mc.red::before{background:var(--red)}
+.mc-val{font-family:var(--sans);font-size:1.75rem;font-weight:700;line-height:1;margin-bottom:4px}
+.mc.green .mc-val{color:var(--green)}
+.mc.blue .mc-val{color:var(--blue)}
+.mc.amber .mc-val{color:var(--amber)}
+.mc.red .mc-val{color:var(--red)}
+.mc-label{font-size:11px;color:var(--text3)}
+.mc-change{font-size:10px;margin-top:6px}
+.mc-change.up{color:var(--green)}
+.mc-change.down{color:var(--red)}
+
+/* PIPELINE VISUAL */
+.pipeline-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1.25rem}
+.pipeline-run-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.run-id{font-size:11px;color:var(--text3)}
+.run-title{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text)}
+.run-branch{font-size:10px;color:var(--blue);background:var(--blue-glow);border:1px solid rgba(96,165,250,0.2);padding:2px 8px;border-radius:3px}
+
+.pipeline-stages{display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:4px}
+.stage{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  min-width:90px;position:relative;flex:1;
+}
+.stage:not(:last-child)::after{
+  content:'';position:absolute;top:18px;left:calc(50% + 20px);right:calc(-50% + 20px);
+  height:2px;background:var(--border2);z-index:0;
+}
+.stage.done:not(:last-child)::after{background:var(--green)}
+.stage.running:not(:last-child)::after{background:linear-gradient(90deg,var(--green),var(--border2))}
+
+.stage-icon{
+  width:36px;height:36px;border-radius:50%;border:2px solid var(--border2);
+  background:var(--bg3);display:flex;align-items:center;justify-content:center;
+  font-size:14px;position:relative;z-index:1;transition:all 0.3s;
+}
+.stage.done .stage-icon{border-color:var(--green);background:rgba(34,211,165,0.1);color:var(--green)}
+.stage.running .stage-icon{border-color:var(--amber);background:rgba(251,191,36,0.1);animation:spin-border 1s linear infinite}
+.stage.fail .stage-icon{border-color:var(--red);background:var(--red-glow);color:var(--red)}
+.stage.pending .stage-icon{border-color:var(--text3);color:var(--text3)}
+@keyframes spin-border{0%{box-shadow:0 0 0 2px var(--amber)}50%{box-shadow:0 0 8px 2px var(--amber)}100%{box-shadow:0 0 0 2px var(--amber)}}
+
+.stage-name{font-size:10px;color:var(--text2);text-align:center;letter-spacing:0.03em}
+.stage.done .stage-name{color:var(--green)}
+.stage.running .stage-name{color:var(--amber)}
+.stage.fail .stage-name{color:var(--red)}
+
+.stage-time{font-size:10px;color:var(--text3)}
+
+/* BOTTOM GRID */
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:800px){.bottom-grid{grid-template-columns:1fr}}
+
+/* LOG PANEL */
+.log-panel{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.panel-hdr{
+  background:var(--bg3);border-bottom:1px solid var(--border);
+  padding:0.6rem 1rem;display:flex;align-items:center;justify-content:space-between;
+}
+.panel-title{font-size:12px;color:var(--text2);font-weight:500}
+.panel-badge{font-size:10px;padding:1px 6px;border-radius:2px}
+.badge-live{background:var(--red-glow);border:1px solid rgba(248,113,113,0.3);color:var(--red)}
+.badge-ok{background:var(--green-glow);border:1px solid rgba(34,211,165,0.3);color:var(--green)}
+
+.log-body{height:220px;overflow-y:auto;padding:0.75rem;font-size:11px;line-height:2}
+.log-body::-webkit-scrollbar{width:3px}
+.log-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.log-line{display:flex;gap:8px;padding:1px 0}
+.log-ts{color:var(--text3);min-width:68px;flex-shrink:0}
+.log-level{min-width:42px;flex-shrink:0;font-weight:500}
+.log-level.INFO{color:var(--blue)}
+.log-level.PASS{color:var(--green)}
+.log-level.WARN{color:var(--amber)}
+.log-level.FAIL{color:var(--red)}
+.log-msg{color:var(--text2)}
+
+/* RECENT BUILDS */
+.builds-panel{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.build-row{
+  display:flex;align-items:center;gap:10px;
+  padding:0.65rem 1rem;border-bottom:1px solid var(--border);
+  transition:background 0.15s;cursor:pointer;
+}
+.build-row:last-child{border-bottom:none}
+.build-row:hover{background:var(--bg3)}
+.build-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.build-num{font-size:11px;color:var(--text3);min-width:32px}
+.build-info{flex:1}
+.build-name{font-size:12px;color:var(--text);margin-bottom:1px}
+.build-meta{font-size:10px;color:var(--text3)}
+.build-dur{font-size:11px;color:var(--text2);text-align:right}
+.build-time{font-size:10px;color:var(--text3);text-align:right}
+
+/* TRIGGER BTN */
+.run-btn{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.06em;
+  padding:6px 16px;border-radius:4px;cursor:pointer;
+  background:var(--green-glow);border:1px solid rgba(34,211,165,0.4);
+  color:var(--green);transition:all 0.2s;
+}
+.run-btn:hover{background:var(--green);color:var(--bg);border-color:var(--green)}
+.run-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* MINI CHART */
+.chart-row{display:flex;align-items:flex-end;gap:3px;height:36px;margin-top:8px}
+.chart-bar{
+  flex:1;border-radius:2px 2px 0 0;min-height:3px;
+  transition:height 0.3s;
+}
+
+/* RESPONSIVE */
+@media(max-width:700px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Pipeline Monitor
+  </div>
+  <div class="topbar-right">
+    <span class="sys-time" id="clock">--:--:--</span>
+    <span class="env-badge">PRODUCTION</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Pipelines</div>
+      <div class="nav-item active"><span class="nav-icon">⬡</span> Overview <div class="status-dot s-green"></div></div>
+      <div class="nav-item"><span class="nav-icon">⬡</span> DevSecOps CI/CD <div class="status-dot s-green"></div></div>
+      <div class="nav-item"><span class="nav-icon">⬡</span> Three-Tier App <div class="status-dot s-amber"></div></div>
+      <div class="nav-item"><span class="nav-icon">⬡</span> EKS Microservices <div class="status-dot s-green"></div></div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Infrastructure</div>
+      <div class="nav-item"><span class="nav-icon">◈</span> Kubernetes <div class="status-dot s-green"></div></div>
+      <div class="nav-item"><span class="nav-icon">◈</span> AWS EKS <div class="status-dot s-green"></div></div>
+      <div class="nav-item"><span class="nav-icon">◈</span> Terraform <div class="status-dot s-gray"></div></div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Security</div>
+      <div class="nav-item"><span class="nav-icon">◉</span> SonarQube <div class="status-dot s-green"></div></div>
+      <div class="nav-item"><span class="nav-icon">◉</span> Trivy Scanner <div class="status-dot s-green"></div></div>
+      <div class="nav-item"><span class="nav-icon">◉</span> RBAC Policies <div class="status-dot s-green"></div></div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Observability</div>
+      <div class="nav-item"><span class="nav-icon">◎</span> Prometheus <div class="status-dot s-green"></div></div>
+      <div class="nav-item"><span class="nav-icon">◎</span> Grafana <div class="status-dot s-green"></div></div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- METRICS -->
+    <div class="section-hdr">
+      <div>
+        <div class="section-title">CI/CD Overview</div>
+        <div class="section-sub">Last updated: <span id="last-updated">just now</span></div>
+      </div>
+      <button class="run-btn" id="triggerBtn" onclick="triggerBuild()">▶ Trigger Build</button>
+    </div>
+
+    <div class="metrics">
+      <div class="mc green">
+        <div class="mc-val" id="success-rate">97%</div>
+        <div class="mc-label">Build Success Rate</div>
+        <div class="mc-change up" id="sr-change">↑ +2% this week</div>
+        <div class="chart-row" id="sr-chart"></div>
+      </div>
+      <div class="mc blue">
+        <div class="mc-val" id="total-builds">142</div>
+        <div class="mc-label">Total Builds Today</div>
+        <div class="mc-change up">↑ 18 since midnight</div>
+        <div class="chart-row" id="tb-chart"></div>
+      </div>
+      <div class="mc amber">
+        <div class="mc-val" id="avg-duration">4m 12s</div>
+        <div class="mc-label">Avg Build Duration</div>
+        <div class="mc-change up">↓ 38s faster</div>
+        <div class="chart-row" id="dur-chart"></div>
+      </div>
+      <div class="mc red">
+        <div class="mc-val" id="mttr">8m</div>
+        <div class="mc-label">Mean Time to Repair</div>
+        <div class="mc-change up">↓ 12m improvement</div>
+        <div class="chart-row" id="mttr-chart"></div>
+      </div>
+    </div>
+
+    <!-- PIPELINE VISUALIZER -->
+    <div class="pipeline-card">
+      <div class="pipeline-run-hdr">
+        <div>
+          <div class="run-id" id="run-id">Run #143 &nbsp;·&nbsp; triggered by push</div>
+          <div class="run-title" id="run-title">DevSecOps CI/CD Pipeline</div>
+        </div>
+        <span class="run-branch" id="run-branch">main</span>
+      </div>
+
+      <div class="pipeline-stages" id="pipeline-stages">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <!-- BOTTOM GRID -->
+    <div class="bottom-grid">
+
+      <!-- LIVE LOGS -->
+      <div class="log-panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Build Logs</span>
+          <span class="panel-badge badge-live" id="log-badge">● LIVE</span>
+        </div>
+        <div class="log-body" id="log-body">
+          <!-- logs injected by JS -->
+        </div>
+      </div>
+
+      <!-- RECENT BUILDS -->
+      <div class="builds-panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Recent Builds</span>
+          <span class="panel-badge badge-ok">Last 7 runs</span>
+        </div>
+        <div id="builds-list">
+          <!-- rendered by JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// Clock
+function updateClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toTimeString().slice(0,8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Mini bar charts
+function renderChart(id, color, data){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const max = Math.max(...data);
+  el.innerHTML = data.map(v =>
+    `<div class="chart-bar" style="height:${Math.max(10, Math.round((v/max)*36))}px;background:${color};opacity:${0.4 + (v/max)*0.6}"></div>`
+  ).join('');
+}
+renderChart('sr-chart','#22d3a5',[88,91,90,95,93,97,97]);
+renderChart('tb-chart','#60a5fa',[98,110,105,120,130,138,142]);
+renderChart('dur-chart','#fbbf24',[310,290,280,270,265,258,252]);
+renderChart('mttr-chart','#f87171',[24,20,18,15,12,10,8]);
+
+// Pipeline stages config
+const STAGES = [
+  {name:'Checkout',icon:'⬇',time:'0:08'},
+  {name:'Build',icon:'⚙',time:'0:42'},
+  {name:'SAST Scan',icon:'⬡',time:'1:15'},
+  {name:'Quality Gate',icon:'◈',time:'0:22'},
+  {name:'Image Build',icon:'◻',time:'0:55'},
+  {name:'Trivy Scan',icon:'◉',time:'0:18'},
+  {name:'Deploy',icon:'▲',time:'0:32'},
+];
+
+let currentStage = 0;
+let pipelineRunning = false;
+
+function renderPipeline(activeIdx, failIdx = -1){
+  const container = document.getElementById('pipeline-stages');
+  container.innerHTML = STAGES.map((s, i) => {
+    let cls = 'pending';
+    if(i < activeIdx) cls = 'done';
+    else if(i === activeIdx && pipelineRunning) cls = 'running';
+    if(i === failIdx) cls = 'fail';
+    return `
+      <div class="stage ${cls}">
+        <div class="stage-icon">${cls==='done'?'✓':cls==='fail'?'✗':s.icon}</div>
+        <div class="stage-name">${s.name}</div>
+        <div class="stage-time">${cls==='done'||cls==='fail'?s.time:'—'}</div>
+      </div>`;
+  }).join('');
+}
+renderPipeline(7);
+
+// Logs
+const logData = [
+  {ts:'09:41:02', level:'INFO', msg:'Pipeline triggered by git push to main'},
+  {ts:'09:41:03', level:'INFO', msg:'Agent assigned: jenkins-agent-03'},
+  {ts:'09:41:05', level:'INFO', msg:'Cloning repository github.com/ujwal/devsecops'},
+  {ts:'09:41:13', level:'PASS', msg:'Checkout complete — commit a3f9c1b'},
+  {ts:'09:41:14', level:'INFO', msg:'Running docker build --tag app:143'},
+  {ts:'09:41:56', level:'PASS', msg:'Docker image built successfully'},
+  {ts:'09:42:00', level:'INFO', msg:'SonarQube SAST analysis started'},
+  {ts:'09:43:15', level:'PASS', msg:'Code Quality: A  |  Bugs: 0  |  Vulns: 0'},
+  {ts:'09:43:16', level:'INFO', msg:'Checking Quality Gate status...'},
+  {ts:'09:43:38', level:'PASS', msg:'Quality Gate: PASSED ✓'},
+  {ts:'09:43:40', level:'INFO', msg:'Trivy scanning image for CVEs...'},
+  {ts:'09:43:58', level:'WARN', msg:'2 LOW severity CVEs detected — within threshold'},
+  {ts:'09:44:00', level:'PASS', msg:'Trivy scan passed — 0 CRITICAL, 0 HIGH'},
+  {ts:'09:44:01', level:'INFO', msg:'Signing image with cosign...'},
+  {ts:'09:44:04', level:'PASS', msg:'Image signed and pushed to ECR'},
+  {ts:'09:44:06', level:'INFO', msg:'kubectl apply -f k8s/deployment.yaml'},
+  {ts:'09:44:18', level:'INFO', msg:'Rolling update started — 1/3 pods updated'},
+  {ts:'09:44:25', level:'INFO', msg:'Rolling update — 2/3 pods updated'},
+  {ts:'09:44:32', level:'PASS', msg:'Rolling update — 3/3 pods healthy'},
+  {ts:'09:44:33', level:'PASS', msg:'Deployment complete. Run #143 SUCCESS ✓'},
+];
+
+function renderLogs(logs){
+  const body = document.getElementById('log-body');
+  body.innerHTML = logs.map(l =>
+    `<div class="log-line"><span class="log-ts">${l.ts}</span><span class="log-level ${l.level}">${l.level}</span><span class="log-msg">${l.msg}</span></div>`
+  ).join('');
+  body.scrollTop = body.scrollHeight;
+}
+renderLogs(logData);
+
+// Recent builds
+const builds = [
+  {num:143, name:'DevSecOps Pipeline', branch:'main', status:'running', dur:'3m 40s', ago:'now'},
+  {num:142, name:'Three-Tier App', branch:'feature/hpa', status:'pass', dur:'4m 02s', ago:'12m ago'},
+  {num:141, name:'EKS Microservices', branch:'main', status:'pass', dur:'5m 18s', ago:'34m ago'},
+  {num:140, name:'DevSecOps Pipeline', branch:'hotfix/auth', status:'fail', dur:'1m 44s', ago:'1h ago'},
+  {num:139, name:'Three-Tier App', branch:'main', status:'pass', dur:'4m 29s', ago:'2h ago'},
+  {num:138, name:'EKS Microservices', branch:'main', status:'pass', dur:'5m 01s', ago:'3h ago'},
+  {num:137, name:'DevSecOps Pipeline', branch:'main', status:'pass', dur:'3m 58s', ago:'4h ago'},
+];
+
+function statusColor(s){
+  if(s==='pass') return 'var(--green)';
+  if(s==='fail') return 'var(--red)';
+  return 'var(--amber)';
+}
+
+function renderBuilds(){
+  document.getElementById('builds-list').innerHTML = builds.map(b => `
+    <div class="build-row">
+      <div class="build-status" style="background:${statusColor(b.status)};${b.status==='pass'?'box-shadow:0 0 5px var(--green)':b.status==='running'?'animation:pulse 1.5s infinite':''}"></div>
+      <div class="build-num">#${b.num}</div>
+      <div class="build-info">
+        <div class="build-name">${b.name}</div>
+        <div class="build-meta">${b.branch}</div>
+      </div>
+      <div>
+        <div class="build-dur">${b.dur}</div>
+        <div class="build-time">${b.ago}</div>
+      </div>
+    </div>
+  `).join('');
+}
+renderBuilds();
+
+// TRIGGER BUILD SIMULATION
+let buildTimeout = null;
+let logIndex = 0;
+let liveLogs = [];
+
+const newLogLines = [
+  {level:'INFO', msg:'Pipeline triggered — Run #144'},
+  {level:'INFO', msg:'Agent assigned: jenkins-agent-01'},
+  {level:'INFO', msg:'Cloning repository...'},
+  {level:'PASS', msg:'Checkout complete — commit d9e2f4a'},
+  {level:'INFO', msg:'Running docker build --tag app:144'},
+  {level:'PASS', msg:'Docker image built successfully'},
+  {level:'INFO', msg:'Starting SonarQube SAST analysis...'},
+  {level:'PASS', msg:'Code Quality: A  |  Coverage: 84%'},
+  {level:'PASS', msg:'Quality Gate: PASSED ✓'},
+  {level:'INFO', msg:'Running Trivy vulnerability scan...'},
+  {level:'PASS', msg:'0 CRITICAL, 0 HIGH vulnerabilities found'},
+  {level:'INFO', msg:'Signing and pushing image to ECR...'},
+  {level:'PASS', msg:'Image signed successfully'},
+  {level:'INFO', msg:'Deploying to Kubernetes cluster...'},
+  {level:'INFO', msg:'Rolling update: 1/3 replicas updated'},
+  {level:'INFO', msg:'Rolling update: 2/3 replicas updated'},
+  {level:'PASS', msg:'Rolling update: 3/3 replicas healthy'},
+  {level:'PASS', msg:'Run #144 COMPLETE — SUCCESS ✓'},
+];
+
+function pad(n){return String(n).padStart(2,'0')}
+function nowTs(){
+  const d=new Date();
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function triggerBuild(){
+  if(pipelineRunning) return;
+  pipelineRunning = true;
+  currentStage = 0;
+  liveLogs = [];
+  logIndex = 0;
+  document.getElementById('run-id').textContent = 'Run #144 · triggered by push';
+  document.getElementById('run-branch').textContent = 'main';
+  document.getElementById('triggerBtn').disabled = true;
+  document.getElementById('log-badge').textContent = '● LIVE';
+  document.getElementById('log-badge').className = 'panel-badge badge-live';
+  document.getElementById('last-updated').textContent = 'just now';
+
+  renderPipeline(0);
+
+  const stageTimings = [800, 1500, 2200, 1000, 1800, 1200, 1600];
+  const logTimings   = [100, 300, 600, 1000, 1600, 2200, 3200, 4000, 4800, 5400, 6200, 7000, 7600, 8200, 9000, 9800, 10500, 11200];
+
+  // Advance stages
+  let stageTime = 0;
+  STAGES.forEach((s, i) => {
+    stageTime += stageTimings[i];
+    setTimeout(() => {
+      currentStage = i + 1;
+      renderPipeline(i + 1);
+    }, stageTime);
+  });
+
+  // Stream logs
+  newLogLines.forEach((l, i) => {
+    setTimeout(() => {
+      liveLogs.push({ts: nowTs(), level: l.level, msg: l.msg});
+      renderLogs(liveLogs);
+    }, logTimings[i] || (i * 600));
+  });
+
+  // Finish
+  const total = stageTime + 600;
+  setTimeout(() => {
+    pipelineRunning = false;
+    document.getElementById('triggerBtn').disabled = false;
+    document.getElementById('log-badge').textContent = '✓ DONE';
+    document.getElementById('log-badge').className = 'panel-badge badge-ok';
+    document.getElementById('total-builds').textContent = '143';
+    document.getElementById('last-updated').textContent = 'just now';
+
+    // Add to recent builds
+    builds.unshift({num:144, name:'DevSecOps Pipeline', branch:'main', status:'pass', dur:'3m 52s', ago:'just now'});
+    builds.pop();
+    renderBuilds();
+  }, total);
+}
+</script>
+</body>
+</html>
