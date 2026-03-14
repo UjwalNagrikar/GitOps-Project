@@ -3,553 +3,504 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Pipeline Monitor — DevOps Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<title>UN Enterprise — Quantitative Trading</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#07080a;
-  --bg2:#0d0f12;
-  --bg3:#12151a;
-  --bg4:#181c22;
-  --border:#1c2128;
-  --border2:#252d38;
-  --green:#22d3a5;
-  --green-d:#15a07a;
-  --green-glow:rgba(34,211,165,0.12);
-  --blue:#60a5fa;
-  --blue-glow:rgba(96,165,250,0.1);
-  --amber:#fbbf24;
-  --amber-glow:rgba(251,191,36,0.1);
-  --red:#f87171;
-  --red-glow:rgba(248,113,113,0.1);
-  --purple:#a78bfa;
-  --text:#dde4ec;
-  --text2:#6b7d8f;
-  --text3:#374555;
-  --mono:'JetBrains Mono',monospace;
-  --sans:'Space Grotesk',sans-serif;
+  --black:#080808;--black2:#0d0d0d;--black3:#111111;--black4:#161616;
+  --gold:#c9a84c;--gold2:#e8c96b;--gold3:#a07830;
+  --gold-glow:rgba(201,168,76,0.12);--gold-thin:rgba(201,168,76,0.25);
+  --white:#f5f0e8;--white2:#d4cfc4;--white3:#8a8378;--white4:#3d3a35;
+  --green:#4caf82;--red:#cf6679;
+  --serif:'Cormorant Garamond',serif;--mono:'DM Mono',monospace;--sans:'Outfit',sans-serif;
 }
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+body{background:var(--black);color:var(--white);font-family:var(--sans);font-size:15px;line-height:1.6;overflow-x:hidden;cursor:none}
 
-/* SCANLINE EFFECT */
-body::after{
-  content:'';position:fixed;inset:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
-  pointer-events:none;z-index:9999;
-}
+.cursor{position:fixed;width:8px;height:8px;background:var(--gold);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width 0.2s,height 0.2s}
+.cursor-ring{position:fixed;width:32px;height:32px;border:1px solid rgba(201,168,76,0.5);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width 0.25s,height 0.25s}
 
-/* TOPBAR */
-.topbar{
-  background:var(--bg2);border-bottom:1px solid var(--border);
-  padding:0.6rem 1.5rem;
-  display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:100;
-}
-.logo{font-family:var(--sans);font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
-.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-.topbar-right{display:flex;align-items:center;gap:1.5rem}
-.sys-time{font-size:11px;color:var(--text3)}
-.env-badge{font-size:10px;padding:2px 8px;border-radius:3px;border:1px solid rgba(34,211,165,0.3);color:var(--green);background:var(--green-glow);letter-spacing:0.08em}
+/* TICKER */
+.ticker{background:var(--black2);border-bottom:1px solid var(--gold-thin);padding:8px 0;overflow:hidden;position:fixed;top:0;left:0;right:0;z-index:200}
+.ticker-track{display:flex;animation:ticker 40s linear infinite;white-space:nowrap}
+.ticker-item{display:inline-flex;align-items:center;gap:8px;padding:0 2rem;font-family:var(--mono);font-size:11px;color:var(--white3);border-right:1px solid var(--white4)}
+.ticker-sym{color:var(--white2);font-weight:500;letter-spacing:0.05em}
+.ticker-price{color:var(--white)}
+.up{color:#4caf82}.dn{color:#cf6679}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-/* LAYOUT */
-.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 45px)}
+/* NAV */
+nav{position:fixed;top:37px;left:0;right:0;z-index:100;padding:1.5rem 4rem;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(8,8,8,0.95) 0%,transparent 100%);transition:all 0.4s}
+nav.scrolled{background:rgba(8,8,8,0.97);border-bottom:1px solid var(--gold-thin);padding:1rem 4rem}
+.nav-logo{text-decoration:none;display:flex;flex-direction:column}
+.logo-main{font-family:var(--serif);font-size:22px;font-weight:300;letter-spacing:0.15em;color:var(--white);line-height:1}
+.logo-main span{color:var(--gold)}
+.logo-sub{font-family:var(--mono);font-size:9px;color:var(--white3);letter-spacing:0.25em;text-transform:uppercase;margin-top:2px}
+.nav-links{display:flex;align-items:center;gap:2.5rem}
+.nav-links a{font-family:var(--sans);font-size:12px;font-weight:400;letter-spacing:0.1em;text-transform:uppercase;color:var(--white3);text-decoration:none;transition:color 0.2s;position:relative}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:1px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform 0.3s}
+.nav-links a:hover{color:var(--white)}
+.nav-links a:hover::after{transform:scaleX(1)}
+.nav-cta{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold) !important;border:1px solid var(--gold-thin);padding:8px 20px;transition:all 0.3s;background:transparent}
+.nav-cta:hover{background:var(--gold-glow) !important;border-color:var(--gold) !important}
 
-/* SIDEBAR */
-.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:1rem 0}
-.sidebar-section{padding:0 1rem;margin-bottom:1.5rem}
-.sidebar-label{font-size:10px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;padding:0 0.5rem;margin-bottom:0.5rem}
-.nav-item{
-  display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;
-  cursor:pointer;font-size:12px;color:var(--text2);
-  transition:all 0.15s;border:1px solid transparent;
-  margin-bottom:2px;
-}
-.nav-item:hover{background:var(--bg3);color:var(--text)}
-.nav-item.active{background:var(--green-glow);color:var(--green);border-color:rgba(34,211,165,0.2)}
-.nav-icon{width:16px;text-align:center;font-size:12px}
-.status-dot{width:6px;height:6px;border-radius:50%;margin-left:auto}
-.s-green{background:var(--green);box-shadow:0 0 6px var(--green)}
-.s-amber{background:var(--amber)}
-.s-red{background:var(--red);box-shadow:0 0 6px var(--red)}
-.s-gray{background:var(--text3)}
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:calc(37px + 8rem) 4rem 4rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,0.04) 1px,transparent 1px);background-size:80px 80px;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 40%,transparent 100%)}
+.hero-glow{position:absolute;width:700px;height:700px;background:radial-gradient(circle,rgba(201,168,76,0.05) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero-content{position:relative;z-index:2;max-width:860px}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:2rem}
+.eline{width:40px;height:1px;background:var(--gold)}
+.hero-title{font-family:var(--serif);font-size:clamp(3.5rem,8vw,7rem);font-weight:300;line-height:1.0;letter-spacing:-1px;color:var(--white);margin-bottom:1.5rem}
+.hero-title em{font-style:italic;color:var(--gold)}
+.hero-title .l2{display:block;padding-left:5rem}
+.hero-desc{font-size:16px;font-weight:300;color:var(--white3);max-width:520px;line-height:1.8;margin-bottom:3rem}
+.hero-actions{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.btn-p{font-family:var(--mono);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;background:var(--gold);color:var(--black);padding:14px 32px;text-decoration:none;transition:all 0.3s;font-weight:500;display:inline-block;border:none;cursor:pointer}
+.btn-p:hover{background:var(--gold2);transform:translateY(-2px)}
+.btn-g{font-family:var(--mono);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:var(--white3);border:1px solid var(--white4);padding:14px 32px;text-decoration:none;transition:all 0.3s;display:inline-block}
+.btn-g:hover{color:var(--white);border-color:var(--white3)}
 
-.sidebar-divider{height:1px;background:var(--border);margin:0.5rem 1rem 1rem}
+.hero-stats{position:absolute;right:4rem;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:1px;z-index:2}
+.hstat{background:rgba(13,13,13,0.85);border:1px solid var(--white4);border-left:2px solid var(--gold);padding:1rem 1.5rem;min-width:180px;backdrop-filter:blur(10px);transition:border-color 0.3s}
+.hstat:hover{border-left-color:var(--gold2)}
+.hstat-val{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--white);line-height:1;margin-bottom:4px}
+.hstat-val span{color:var(--gold);font-size:1.2rem}
+.hstat-label{font-family:var(--mono);font-size:10px;color:var(--white3);letter-spacing:0.1em;text-transform:uppercase}
 
-/* MAIN */
-.main{padding:1.5rem;overflow:auto}
+/* SECTION */
+section{padding:7rem 4rem;position:relative}
+.sec-ey{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:0.25em;text-transform:uppercase;display:flex;align-items:center;gap:12px;margin-bottom:1rem}
+.sec-ey::before{content:'';width:24px;height:1px;background:var(--gold)}
+.sec-title{font-family:var(--serif);font-size:clamp(2.2rem,4vw,3.5rem);font-weight:300;line-height:1.1;letter-spacing:-0.5px;color:var(--white);margin-bottom:1.5rem}
+.sec-title em{font-style:italic;color:var(--gold)}
+.sec-desc{font-size:15px;font-weight:300;color:var(--white3);max-width:480px;line-height:1.8}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--gold-thin),transparent);margin:0 4rem}
 
-/* SECTION HEADER */
-.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
-.section-title{font-family:var(--sans);font-size:16px;font-weight:600;color:var(--text)}
-.section-sub{font-size:11px;color:var(--text3);margin-top:1px}
+/* STRATEGIES */
+.strat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:4rem;border:1px solid var(--white4)}
+.sc{background:var(--black2);padding:2.5rem;position:relative;overflow:hidden;transition:background 0.3s;border-right:1px solid var(--white4)}
+.sc:last-child{border-right:none}
+.sc:hover{background:var(--black3)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform 0.4s}
+.sc:hover::before{transform:scaleX(1)}
+.sc-num{font-family:var(--mono);font-size:11px;color:var(--white4);margin-bottom:1.5rem}
+.sc-icon{width:46px;height:46px;margin-bottom:1.5rem;border:1px solid var(--white4);display:flex;align-items:center;justify-content:center;transition:border-color 0.3s}
+.sc:hover .sc-icon{border-color:var(--gold)}
+.sc-icon svg{width:20px;height:20px;stroke:var(--gold);fill:none;stroke-width:1.5}
+.sc-title{font-family:var(--serif);font-size:1.5rem;font-weight:400;color:var(--white);margin-bottom:0.75rem}
+.sc-desc{font-size:13px;color:var(--white3);line-height:1.7;font-weight:300}
+.sc-tag{display:inline-block;margin-top:1.5rem;font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid var(--gold-thin);padding-bottom:2px}
 
-/* METRIC CARDS ROW */
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
-@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}}
-.mc{
-  background:var(--bg2);border:1px solid var(--border);border-radius:6px;
-  padding:1rem 1.25rem;position:relative;overflow:hidden;
-}
-.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:6px 6px 0 0}
-.mc.green::before{background:var(--green)}
-.mc.blue::before{background:var(--blue)}
-.mc.amber::before{background:var(--amber)}
-.mc.red::before{background:var(--red)}
-.mc-val{font-family:var(--sans);font-size:1.75rem;font-weight:700;line-height:1;margin-bottom:4px}
-.mc.green .mc-val{color:var(--green)}
-.mc.blue .mc-val{color:var(--blue)}
-.mc.amber .mc-val{color:var(--amber)}
-.mc.red .mc-val{color:var(--red)}
-.mc-label{font-size:11px;color:var(--text3)}
-.mc-change{font-size:10px;margin-top:6px}
-.mc-change.up{color:var(--green)}
-.mc-change.down{color:var(--red)}
+/* PERFORMANCE */
+.perf-section{background:var(--black2);border-top:1px solid var(--gold-thin);border-bottom:1px solid var(--gold-thin)}
+.perf-inner{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center}
+.pm-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;border:1px solid var(--white4);margin-top:3rem}
+.pm{background:var(--black3);padding:1.5rem 2rem;border-right:1px solid var(--white4);border-bottom:1px solid var(--white4)}
+.pm-val{font-family:var(--serif);font-size:2.2rem;font-weight:400;line-height:1;margin-bottom:4px}
+.pm-val.pos{color:var(--green)}.pm-val.gld{color:var(--gold)}.pm-val.wht{color:var(--white)}
+.pm-label{font-family:var(--mono);font-size:10px;color:var(--white3);letter-spacing:0.1em;text-transform:uppercase}
+.chart-lbl{font-family:var(--mono);font-size:10px;color:var(--white3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1rem}
+.chart-legend{display:flex;gap:1.5rem;margin-top:1rem}
+.leg{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--white3)}
+.leg-line{width:24px;height:2px;background:var(--gold)}
+.leg-line.gray{height:1px;background:var(--white4)}
 
-/* PIPELINE VISUAL */
-.pipeline-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1.25rem}
-.pipeline-run-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
-.run-id{font-size:11px;color:var(--text3)}
-.run-title{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text)}
-.run-branch{font-size:10px;color:var(--blue);background:var(--blue-glow);border:1px solid rgba(96,165,250,0.2);padding:2px 8px;border-radius:3px}
+/* TECHNOLOGY */
+.tech-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;border:1px solid var(--white4);margin-top:4rem}
+.tc{background:var(--black2);padding:2.5rem;border-right:1px solid var(--white4);border-bottom:1px solid var(--white4);transition:background 0.3s}
+.tc:hover{background:var(--black3)}
+.tc-num{font-family:var(--mono);font-size:10px;color:var(--white4);margin-bottom:1rem;letter-spacing:0.1em}
+.tc-title{font-family:var(--serif);font-size:1.5rem;font-weight:400;color:var(--white);margin-bottom:0.75rem}
+.tc-desc{font-size:13px;color:var(--white3);line-height:1.7;font-weight:300}
+.tc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:1.25rem}
+.ttag{font-family:var(--mono);font-size:10px;color:var(--white3);border:1px solid var(--white4);padding:3px 10px;letter-spacing:0.05em;transition:all 0.2s}
+.tc:hover .ttag{border-color:var(--white3);color:var(--white2)}
 
-.pipeline-stages{display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:4px}
-.stage{
-  display:flex;flex-direction:column;align-items:center;gap:6px;
-  min-width:90px;position:relative;flex:1;
-}
-.stage:not(:last-child)::after{
-  content:'';position:absolute;top:18px;left:calc(50% + 20px);right:calc(-50% + 20px);
-  height:2px;background:var(--border2);z-index:0;
-}
-.stage.done:not(:last-child)::after{background:var(--green)}
-.stage.running:not(:last-child)::after{background:linear-gradient(90deg,var(--green),var(--border2))}
+/* TEAM */
+.team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;margin-top:4rem}
+.team-card{}
+.team-img{width:100%;aspect-ratio:3/4;background:var(--black3);border:1px solid var(--white4);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;margin-bottom:1.25rem;transition:border-color 0.3s}
+.team-card:hover .team-img{border-color:var(--gold)}
+.team-initials{font-family:var(--serif);font-size:3rem;font-weight:300;color:var(--white4);letter-spacing:0.1em}
+.team-name{font-family:var(--serif);font-size:1.2rem;font-weight:400;color:var(--white);margin-bottom:3px}
+.team-role{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px}
+.team-bio{font-size:12px;color:var(--white3);line-height:1.6;font-weight:300}
 
-.stage-icon{
-  width:36px;height:36px;border-radius:50%;border:2px solid var(--border2);
-  background:var(--bg3);display:flex;align-items:center;justify-content:center;
-  font-size:14px;position:relative;z-index:1;transition:all 0.3s;
-}
-.stage.done .stage-icon{border-color:var(--green);background:rgba(34,211,165,0.1);color:var(--green)}
-.stage.running .stage-icon{border-color:var(--amber);background:rgba(251,191,36,0.1);animation:spin-border 1s linear infinite}
-.stage.fail .stage-icon{border-color:var(--red);background:var(--red-glow);color:var(--red)}
-.stage.pending .stage-icon{border-color:var(--text3);color:var(--text3)}
-@keyframes spin-border{0%{box-shadow:0 0 0 2px var(--amber)}50%{box-shadow:0 0 8px 2px var(--amber)}100%{box-shadow:0 0 0 2px var(--amber)}}
+/* MARQUEE */
+.mq-section{padding:2rem 0;overflow:hidden;border-top:1px solid var(--white4);border-bottom:1px solid var(--white4);background:var(--black3)}
+.mq-track{display:flex;animation:mq 35s linear infinite;white-space:nowrap}
+.mq-item{display:inline-flex;align-items:center;gap:1rem;padding:0 3rem;font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--white4);font-style:italic}
+.mq-item span{color:var(--gold);font-style:normal;font-size:1rem;font-family:var(--mono);letter-spacing:0.1em}
+@keyframes mq{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-.stage-name{font-size:10px;color:var(--text2);text-align:center;letter-spacing:0.03em}
-.stage.done .stage-name{color:var(--green)}
-.stage.running .stage-name{color:var(--amber)}
-.stage.fail .stage-name{color:var(--red)}
+/* CONTACT */
+.contact-section{background:var(--black2);border-top:1px solid var(--gold-thin)}
+.contact-inner{display:grid;grid-template-columns:1fr 1fr;gap:6rem;align-items:start}
+.form-row{margin-bottom:1.25rem}
+.form-lbl{display:block;font-family:var(--mono);font-size:10px;color:var(--white3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px}
+.form-input{width:100%;background:transparent;border:none;border-bottom:1px solid var(--white4);color:var(--white);font-family:var(--sans);font-size:14px;padding:10px 0;outline:none;transition:border-color 0.3s}
+.form-input:focus{border-bottom-color:var(--gold)}
+.form-input::placeholder{color:var(--white4)}
+.form-select{width:100%;background:var(--black2);border:none;border-bottom:1px solid var(--white4);color:var(--white3);font-family:var(--mono);font-size:12px;padding:10px 0;outline:none;cursor:pointer;transition:border-color 0.3s;appearance:none}
+.form-select:focus{border-bottom-color:var(--gold)}
+.form-textarea{width:100%;background:transparent;border:none;border-bottom:1px solid var(--white4);color:var(--white);font-family:var(--sans);font-size:14px;padding:10px 0;outline:none;resize:none;transition:border-color 0.3s;height:80px}
+.form-textarea:focus{border-bottom-color:var(--gold)}
+.ci-item{display:flex;gap:1rem;padding:1.25rem 0;border-bottom:1px solid var(--white4)}
+.ci-lbl{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;min-width:80px;margin-top:2px}
+.ci-val{font-size:14px;color:var(--white2);line-height:1.6}
 
-.stage-time{font-size:10px;color:var(--text3)}
+/* FOOTER */
+footer{background:var(--black);border-top:1px solid var(--gold-thin);padding:3rem 4rem}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.footer-logo{font-family:var(--serif);font-size:18px;font-weight:300;letter-spacing:0.15em;color:var(--white3)}
+.footer-logo span{color:var(--gold)}
+.footer-copy{font-family:var(--mono);font-size:11px;color:var(--white4);letter-spacing:0.05em}
+.footer-links{display:flex;gap:2rem}
+.footer-links a{font-family:var(--mono);font-size:10px;color:var(--white4);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;transition:color 0.2s}
+.footer-links a:hover{color:var(--gold)}
+.footer-disc{margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--white4);font-family:var(--mono);font-size:10px;color:var(--white4);line-height:1.8;letter-spacing:0.03em}
 
-/* BOTTOM GRID */
-.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:800px){.bottom-grid{grid-template-columns:1fr}}
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity 0.8s,transform 0.8s}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.d1{transition-delay:0.1s}.d2{transition-delay:0.2s}.d3{transition-delay:0.3s}
 
-/* LOG PANEL */
-.log-panel{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.panel-hdr{
-  background:var(--bg3);border-bottom:1px solid var(--border);
-  padding:0.6rem 1rem;display:flex;align-items:center;justify-content:space-between;
-}
-.panel-title{font-size:12px;color:var(--text2);font-weight:500}
-.panel-badge{font-size:10px;padding:1px 6px;border-radius:2px}
-.badge-live{background:var(--red-glow);border:1px solid rgba(248,113,113,0.3);color:var(--red)}
-.badge-ok{background:var(--green-glow);border:1px solid rgba(34,211,165,0.3);color:var(--green)}
-
-.log-body{height:220px;overflow-y:auto;padding:0.75rem;font-size:11px;line-height:2}
-.log-body::-webkit-scrollbar{width:3px}
-.log-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-.log-line{display:flex;gap:8px;padding:1px 0}
-.log-ts{color:var(--text3);min-width:68px;flex-shrink:0}
-.log-level{min-width:42px;flex-shrink:0;font-weight:500}
-.log-level.INFO{color:var(--blue)}
-.log-level.PASS{color:var(--green)}
-.log-level.WARN{color:var(--amber)}
-.log-level.FAIL{color:var(--red)}
-.log-msg{color:var(--text2)}
-
-/* RECENT BUILDS */
-.builds-panel{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.build-row{
-  display:flex;align-items:center;gap:10px;
-  padding:0.65rem 1rem;border-bottom:1px solid var(--border);
-  transition:background 0.15s;cursor:pointer;
-}
-.build-row:last-child{border-bottom:none}
-.build-row:hover{background:var(--bg3)}
-.build-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.build-num{font-size:11px;color:var(--text3);min-width:32px}
-.build-info{flex:1}
-.build-name{font-size:12px;color:var(--text);margin-bottom:1px}
-.build-meta{font-size:10px;color:var(--text3)}
-.build-dur{font-size:11px;color:var(--text2);text-align:right}
-.build-time{font-size:10px;color:var(--text3);text-align:right}
-
-/* TRIGGER BTN */
-.run-btn{
-  font-family:var(--mono);font-size:11px;letter-spacing:0.06em;
-  padding:6px 16px;border-radius:4px;cursor:pointer;
-  background:var(--green-glow);border:1px solid rgba(34,211,165,0.4);
-  color:var(--green);transition:all 0.2s;
-}
-.run-btn:hover{background:var(--green);color:var(--bg);border-color:var(--green)}
-.run-btn:disabled{opacity:0.4;cursor:not-allowed}
-
-/* MINI CHART */
-.chart-row{display:flex;align-items:flex-end;gap:3px;height:36px;margin-top:8px}
-.chart-bar{
-  flex:1;border-radius:2px 2px 0 0;min-height:3px;
-  transition:height 0.3s;
-}
-
-/* RESPONSIVE */
-@media(max-width:700px){
-  .layout{grid-template-columns:1fr}
-  .sidebar{display:none}
-  .metrics{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1100px){
+  nav,.hero,section,footer{padding-left:2rem;padding-right:2rem}
+  .hero-stats{display:none}
+  .strat-grid{grid-template-columns:1fr}
+  .perf-inner{grid-template-columns:1fr}
+  .team-grid{grid-template-columns:repeat(2,1fr)}
+  .tech-grid{grid-template-columns:1fr}
+  .contact-inner{grid-template-columns:1fr}
+  nav{padding-left:1.5rem;padding-right:1.5rem}
+  nav.scrolled{padding-left:1.5rem;padding-right:1.5rem}
+  .divider{margin:0 2rem;width:calc(100% - 4rem)}
 }
 </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="logo">
-    <div class="logo-dot"></div>
-    Pipeline Monitor
+<div class="cursor" id="cur"></div>
+<div class="cursor-ring" id="curR"></div>
+
+<!-- LIVE TICKER -->
+<div class="ticker"><div class="ticker-track" id="tk"></div></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo">
+    <span class="logo-main">UN <span>Enterprise</span></span>
+    <span class="logo-sub">Quantitative Trading</span>
+  </a>
+  <div class="nav-links">
+    <a href="#strategies">Strategies</a>
+    <a href="#performance">Performance</a>
+    <a href="#technology">Technology</a>
+    <a href="#team">Team</a>
+    <a href="#contact" class="nav-cta">Invest With Us</a>
   </div>
-  <div class="topbar-right">
-    <span class="sys-time" id="clock">--:--:--</span>
-    <span class="env-badge">PRODUCTION</span>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow reveal"><span class="eline"></span>Est. 2018 · Mumbai & Singapore</div>
+    <h1 class="hero-title reveal d1">
+      Where <em>Mathematics</em>
+      <span class="l2">Meets Markets</span>
+    </h1>
+    <p class="hero-desc reveal d2">UN Enterprise deploys systematic, data-driven strategies across global equity, derivatives, and crypto markets — generating alpha through disciplined quantitative research.</p>
+    <div class="hero-actions reveal d3">
+      <a href="#strategies" class="btn-p">Explore Strategies</a>
+      <a href="#performance" class="btn-g">View Performance</a>
+    </div>
   </div>
+  <div class="hero-stats">
+    <div class="hstat reveal"><div class="hstat-val">$2.4<span>B</span></div><div class="hstat-label">Assets Under Management</div></div>
+    <div class="hstat reveal d1"><div class="hstat-val">28.6<span>%</span></div><div class="hstat-label">Annualized Return (5Y)</div></div>
+    <div class="hstat reveal d2"><div class="hstat-val">1.94<span></span></div><div class="hstat-label">Sharpe Ratio</div></div>
+    <div class="hstat reveal d3"><div class="hstat-val">47<span>+</span></div><div class="hstat-label">Global Markets Traded</div></div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="mq-section">
+  <div class="mq-track" id="mq"></div>
 </div>
 
-<div class="layout">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-label">Pipelines</div>
-      <div class="nav-item active"><span class="nav-icon">⬡</span> Overview <div class="status-dot s-green"></div></div>
-      <div class="nav-item"><span class="nav-icon">⬡</span> DevSecOps CI/CD <div class="status-dot s-green"></div></div>
-      <div class="nav-item"><span class="nav-icon">⬡</span> Three-Tier App <div class="status-dot s-amber"></div></div>
-      <div class="nav-item"><span class="nav-icon">⬡</span> EKS Microservices <div class="status-dot s-green"></div></div>
+<!-- STRATEGIES -->
+<section id="strategies">
+  <div class="sec-ey reveal">Our Approach</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:end">
+    <h2 class="sec-title reveal">Systematic <em>Alpha</em><br>Generation</h2>
+    <p class="sec-desc reveal">Every strategy at UN Enterprise is rooted in rigorous mathematical frameworks, backtested across decades of market data and executed with microsecond precision.</p>
+  </div>
+  <div class="strat-grid">
+    <div class="sc reveal">
+      <div class="sc-num">01 / Strategy</div>
+      <div class="sc-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="sc-title">Statistical Arbitrage</div>
+      <div class="sc-desc">Exploiting mean-reversion in correlated asset pairs using cointegration models, Kalman filters, and real-time spread monitoring across 200+ instruments.</div>
+      <div class="sc-tag">Equity · Futures · ETFs</div>
     </div>
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Infrastructure</div>
-      <div class="nav-item"><span class="nav-icon">◈</span> Kubernetes <div class="status-dot s-green"></div></div>
-      <div class="nav-item"><span class="nav-icon">◈</span> AWS EKS <div class="status-dot s-green"></div></div>
-      <div class="nav-item"><span class="nav-icon">◈</span> Terraform <div class="status-dot s-gray"></div></div>
+    <div class="sc reveal d1">
+      <div class="sc-num">02 / Strategy</div>
+      <div class="sc-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+      <div class="sc-title">High Frequency Alpha</div>
+      <div class="sc-desc">Latency-sensitive microstructure strategies operating at sub-millisecond speed on co-located infrastructure across NSE, BSE, CME, and Binance.</div>
+      <div class="sc-tag">Equities · Crypto · FX</div>
     </div>
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Security</div>
-      <div class="nav-item"><span class="nav-icon">◉</span> SonarQube <div class="status-dot s-green"></div></div>
-      <div class="nav-item"><span class="nav-icon">◉</span> Trivy Scanner <div class="status-dot s-green"></div></div>
-      <div class="nav-item"><span class="nav-icon">◉</span> RBAC Policies <div class="status-dot s-green"></div></div>
-    </div>
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Observability</div>
-      <div class="nav-item"><span class="nav-icon">◎</span> Prometheus <div class="status-dot s-green"></div></div>
-      <div class="nav-item"><span class="nav-icon">◎</span> Grafana <div class="status-dot s-green"></div></div>
+    <div class="sc reveal d2">
+      <div class="sc-num">03 / Strategy</div>
+      <div class="sc-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+      <div class="sc-title">ML-Driven Momentum</div>
+      <div class="sc-desc">Deep learning models trained on alternative data — satellite imagery, NLP sentiment, order flow — to capture regime shifts before the broader market consensus.</div>
+      <div class="sc-tag">Global Equities · Commodities</div>
     </div>
   </div>
+</section>
 
-  <!-- MAIN CONTENT -->
-  <div class="main">
+<div class="divider"></div>
 
-    <!-- METRICS -->
-    <div class="section-hdr">
-      <div>
-        <div class="section-title">CI/CD Overview</div>
-        <div class="section-sub">Last updated: <span id="last-updated">just now</span></div>
-      </div>
-      <button class="run-btn" id="triggerBtn" onclick="triggerBuild()">▶ Trigger Build</button>
-    </div>
-
-    <div class="metrics">
-      <div class="mc green">
-        <div class="mc-val" id="success-rate">97%</div>
-        <div class="mc-label">Build Success Rate</div>
-        <div class="mc-change up" id="sr-change">↑ +2% this week</div>
-        <div class="chart-row" id="sr-chart"></div>
-      </div>
-      <div class="mc blue">
-        <div class="mc-val" id="total-builds">142</div>
-        <div class="mc-label">Total Builds Today</div>
-        <div class="mc-change up">↑ 18 since midnight</div>
-        <div class="chart-row" id="tb-chart"></div>
-      </div>
-      <div class="mc amber">
-        <div class="mc-val" id="avg-duration">4m 12s</div>
-        <div class="mc-label">Avg Build Duration</div>
-        <div class="mc-change up">↓ 38s faster</div>
-        <div class="chart-row" id="dur-chart"></div>
-      </div>
-      <div class="mc red">
-        <div class="mc-val" id="mttr">8m</div>
-        <div class="mc-label">Mean Time to Repair</div>
-        <div class="mc-change up">↓ 12m improvement</div>
-        <div class="chart-row" id="mttr-chart"></div>
+<!-- PERFORMANCE -->
+<section id="performance" class="perf-section">
+  <div class="perf-inner">
+    <div>
+      <div class="sec-ey reveal">Track Record</div>
+      <h2 class="sec-title reveal">Consistent <em>Returns</em><br>Across Cycles</h2>
+      <p class="sec-desc reveal">Six years of audited performance across bull, bear, and sideways market regimes with superior risk-adjusted returns and capital preservation.</p>
+      <div class="pm-grid">
+        <div class="pm reveal"><div class="pm-val pos">+28.6%</div><div class="pm-label">5Y Annualized Return</div></div>
+        <div class="pm reveal d1"><div class="pm-val gld">1.94</div><div class="pm-label">Sharpe Ratio</div></div>
+        <div class="pm reveal d2"><div class="pm-val wht">-8.2%</div><div class="pm-label">Max Drawdown</div></div>
+        <div class="pm reveal d3"><div class="pm-val pos">94%</div><div class="pm-label">Profitable Months</div></div>
+        <div class="pm reveal"><div class="pm-val gld">0.31</div><div class="pm-label">Beta to S&P 500</div></div>
+        <div class="pm reveal d1"><div class="pm-val pos">2.1×</div><div class="pm-label">vs Benchmark</div></div>
       </div>
     </div>
-
-    <!-- PIPELINE VISUALIZER -->
-    <div class="pipeline-card">
-      <div class="pipeline-run-hdr">
-        <div>
-          <div class="run-id" id="run-id">Run #143 &nbsp;·&nbsp; triggered by push</div>
-          <div class="run-title" id="run-title">DevSecOps CI/CD Pipeline</div>
-        </div>
-        <span class="run-branch" id="run-branch">main</span>
+    <div class="reveal">
+      <div class="chart-lbl">Cumulative NAV Growth — 2019 to 2024</div>
+      <canvas id="pc" height="220" style="width:100%"></canvas>
+      <div class="chart-legend">
+        <div class="leg"><div class="leg-line"></div>UN Enterprise</div>
+        <div class="leg"><div class="leg-line gray"></div>Nifty 50</div>
       </div>
-
-      <div class="pipeline-stages" id="pipeline-stages">
-        <!-- rendered by JS -->
-      </div>
-    </div>
-
-    <!-- BOTTOM GRID -->
-    <div class="bottom-grid">
-
-      <!-- LIVE LOGS -->
-      <div class="log-panel">
-        <div class="panel-hdr">
-          <span class="panel-title">Build Logs</span>
-          <span class="panel-badge badge-live" id="log-badge">● LIVE</span>
-        </div>
-        <div class="log-body" id="log-body">
-          <!-- logs injected by JS -->
-        </div>
-      </div>
-
-      <!-- RECENT BUILDS -->
-      <div class="builds-panel">
-        <div class="panel-hdr">
-          <span class="panel-title">Recent Builds</span>
-          <span class="panel-badge badge-ok">Last 7 runs</span>
-        </div>
-        <div id="builds-list">
-          <!-- rendered by JS -->
-        </div>
-      </div>
-
     </div>
   </div>
-</div>
+</section>
+
+<!-- TECHNOLOGY -->
+<section id="technology" style="background:var(--black)">
+  <div class="sec-ey reveal">Infrastructure</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:end">
+    <h2 class="sec-title reveal">Built for <em>Speed</em><br>& Precision</h2>
+    <p class="sec-desc reveal">Our proprietary technology stack processes 50M+ data points per second with sub-100μs execution latency on co-located exchange servers.</p>
+  </div>
+  <div class="tech-grid">
+    <div class="tc reveal">
+      <div class="tc-num">01</div>
+      <div class="tc-title">Execution Engine</div>
+      <div class="tc-desc">Custom C++ order management system with FPGA-accelerated routing achieving consistent sub-100 microsecond latency from signal to exchange acknowledgement.</div>
+      <div class="tc-tags"><span class="ttag">C++17</span><span class="ttag">FPGA</span><span class="ttag">FIX Protocol</span><span class="ttag">Co-location</span></div>
+    </div>
+    <div class="tc reveal d1">
+      <div class="tc-num">02</div>
+      <div class="tc-title">Research Platform</div>
+      <div class="tc-desc">Cloud-native backtesting infrastructure with tick-by-tick simulation across 20 years of market data with realistic slippage and transaction cost models.</div>
+      <div class="tc-tags"><span class="ttag">Python</span><span class="ttag">Rust</span><span class="ttag">Apache Arrow</span><span class="ttag">AWS</span></div>
+    </div>
+    <div class="tc reveal d2">
+      <div class="tc-num">03</div>
+      <div class="tc-title">ML Infrastructure</div>
+      <div class="tc-desc">Distributed model training pipeline with continuous learning, serving real-time predictions with sub-millisecond inference latency for live production trading.</div>
+      <div class="tc-tags"><span class="ttag">PyTorch</span><span class="ttag">CUDA</span><span class="ttag">Kubernetes</span><span class="ttag">MLflow</span></div>
+    </div>
+    <div class="tc reveal d3">
+      <div class="tc-num">04</div>
+      <div class="tc-title">Risk Management</div>
+      <div class="tc-desc">Real-time portfolio risk engine computing Greeks, VaR, and stress scenarios across 10,000 Monte Carlo simulations per second with automated kill switches.</div>
+      <div class="tc-tags"><span class="ttag">Monte Carlo</span><span class="ttag">CVaR</span><span class="ttag">Real-time</span><span class="ttag">Automated</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id="team" style="background:var(--black2);border-top:1px solid var(--gold-thin)">
+  <div class="sec-ey reveal">Leadership</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:end">
+    <h2 class="sec-title reveal">The Minds <em>Behind</em><br>the Models</h2>
+    <p class="sec-desc reveal">Our team combines PhDs from IIT, IIM, and MIT with veterans from Goldman Sachs, Citadel, and Two Sigma — united by a passion for systematic markets.</p>
+  </div>
+  <div class="team-grid">
+    <div class="team-card reveal">
+      <div class="team-img"><div class="team-initials">UN</div></div>
+      <div class="team-name">Uday Nair</div>
+      <div class="team-role">Founder & CIO</div>
+      <div class="team-bio">PhD Mathematics, IIT Bombay. Former quant at Goldman Sachs and Two Sigma. Pioneer of volatility arbitrage strategies in Indian markets.</div>
+    </div>
+    <div class="team-card reveal d1">
+      <div class="team-img"><div class="team-initials">RS</div></div>
+      <div class="team-name">Riya Sharma</div>
+      <div class="team-role">Head of Research</div>
+      <div class="team-bio">MS Statistics, Stanford. 12 years building ML-driven factor models. Led research at Citadel's Global Equities desk in Singapore.</div>
+    </div>
+    <div class="team-card reveal d2">
+      <div class="team-img"><div class="team-initials">AK</div></div>
+      <div class="team-name">Arjun Kapoor</div>
+      <div class="team-role">Chief Risk Officer</div>
+      <div class="team-bio">IIM Ahmedabad, CFA. Former risk head at ICICI Securities. Specialist in tail risk hedging and cross-asset correlation regimes.</div>
+    </div>
+    <div class="team-card reveal d3">
+      <div class="team-img"><div class="team-initials">PM</div></div>
+      <div class="team-name">Priya Mehta</div>
+      <div class="team-role">Head of Technology</div>
+      <div class="team-bio">BTech CS, IIT Delhi. Built HFT infrastructure at NSE before founding two fintech startups. Expert in FPGA and low-latency systems.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="contact-section">
+  <div class="contact-inner">
+    <div>
+      <div class="sec-ey reveal">Get In Touch</div>
+      <h2 class="sec-title reveal">Partner With<br><em>UN Enterprise</em></h2>
+      <p class="sec-desc reveal">We work with institutional investors, family offices, and HNIs with a minimum investment of ₹5 Crore. Schedule a confidential consultation.</p>
+      <div style="margin-top:2.5rem" class="reveal">
+        <div class="ci-item"><span class="ci-lbl">Mumbai</span><span class="ci-val">Nariman Point, Mumbai 400021<br>+91 22 6600 0000</span></div>
+        <div class="ci-item"><span class="ci-lbl">Singapore</span><span class="ci-val">Marina Bay Financial Centre<br>+65 6000 0000</span></div>
+        <div class="ci-item"><span class="ci-lbl">Email</span><span class="ci-val">investors@unenterprise.com<br>research@unenterprise.com</span></div>
+        <div class="ci-item"><span class="ci-lbl">SEBI Reg</span><span class="ci-val">INH000000000 · Portfolio Manager<br>AMFI Registered · ISO 27001 Certified</span></div>
+      </div>
+    </div>
+    <div class="reveal">
+      <div style="margin-top:2.5rem">
+        <div class="form-row"><label class="form-lbl">Full Name</label><input type="text" class="form-input" placeholder="Your full name"/></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+          <div class="form-row"><label class="form-lbl">Email</label><input type="email" class="form-input" placeholder="email@domain.com"/></div>
+          <div class="form-row"><label class="form-lbl">Phone</label><input type="tel" class="form-input" placeholder="+91 00000 00000"/></div>
+        </div>
+        <div class="form-row"><label class="form-lbl">Investor Type</label>
+          <select class="form-select"><option value="" disabled selected>Select category</option><option>Institutional Investor</option><option>Family Office</option><option>High Net Worth Individual</option><option>Corporate Treasury</option></select>
+        </div>
+        <div class="form-row"><label class="form-lbl">Investment Horizon</label>
+          <select class="form-select"><option value="" disabled selected>Select time horizon</option><option>1 – 2 Years</option><option>2 – 5 Years</option><option>5+ Years</option></select>
+        </div>
+        <div class="form-row"><label class="form-lbl">Message</label><textarea class="form-textarea" placeholder="Tell us about your investment objectives..."></textarea></div>
+        <button class="btn-p" style="width:100%;text-align:center;margin-top:1rem">Request Consultation</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">UN <span>Enterprise</span></div>
+    <div class="footer-copy">© 2024 UN Enterprise Pvt. Ltd. · SEBI Registered · All rights reserved</div>
+    <div class="footer-links"><a href="#">Privacy</a><a href="#">Disclaimer</a><a href="#">Regulatory</a></div>
+  </div>
+  <div class="footer-disc">Disclaimer: Past performance is not indicative of future results. Investments in financial instruments carry risk including possible loss of principal. This website is for informational purposes only and does not constitute investment advice. UN Enterprise is registered with SEBI as a Portfolio Manager (Registration No. INH000000000). Minimum investment ₹5 Crore. Not an offer or solicitation in any jurisdiction where such offer is not permitted.</div>
+</footer>
 
 <script>
-// Clock
-function updateClock(){
-  const now = new Date();
-  document.getElementById('clock').textContent = now.toTimeString().slice(0,8);
-}
-setInterval(updateClock, 1000);
-updateClock();
+// Cursor
+const cur=document.getElementById('cur'),curR=document.getElementById('curR');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+(function anim(){rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(anim)})();
+document.querySelectorAll('a,button,.sc,.tc,.team-card,.hstat').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.width='4px';cur.style.height='4px';curR.style.width='50px';curR.style.height='50px'});
+  el.addEventListener('mouseleave',()=>{cur.style.width='8px';cur.style.height='8px';curR.style.width='32px';curR.style.height='32px'});
+});
 
-// Mini bar charts
-function renderChart(id, color, data){
-  const el = document.getElementById(id);
-  if(!el) return;
-  const max = Math.max(...data);
-  el.innerHTML = data.map(v =>
-    `<div class="chart-bar" style="height:${Math.max(10, Math.round((v/max)*36))}px;background:${color};opacity:${0.4 + (v/max)*0.6}"></div>`
-  ).join('');
-}
-renderChart('sr-chart','#22d3a5',[88,91,90,95,93,97,97]);
-renderChart('tb-chart','#60a5fa',[98,110,105,120,130,138,142]);
-renderChart('dur-chart','#fbbf24',[310,290,280,270,265,258,252]);
-renderChart('mttr-chart','#f87171',[24,20,18,15,12,10,8]);
+// Nav scroll
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>80));
 
-// Pipeline stages config
-const STAGES = [
-  {name:'Checkout',icon:'⬇',time:'0:08'},
-  {name:'Build',icon:'⚙',time:'0:42'},
-  {name:'SAST Scan',icon:'⬡',time:'1:15'},
-  {name:'Quality Gate',icon:'◈',time:'0:22'},
-  {name:'Image Build',icon:'◻',time:'0:55'},
-  {name:'Trivy Scan',icon:'◉',time:'0:18'},
-  {name:'Deploy',icon:'▲',time:'0:32'},
+// Ticker
+const tks=[
+  {s:'NIFTY',p:'22,458',c:'+1.24%',u:1},{s:'SENSEX',p:'73,904',c:'+0.98%',u:1},
+  {s:'BANKNIFTY',p:'48,220',c:'-0.32%',u:0},{s:'USDINR',p:'83.42',c:'+0.05%',u:1},
+  {s:'GOLD',p:'₹72,450',c:'+0.67%',u:1},{s:'CRUDEOIL',p:'₹6,842',c:'-1.12%',u:0},
+  {s:'BTC',p:'$68,420',c:'+2.34%',u:1},{s:'ETH',p:'$3,842',c:'+1.87%',u:1},
+  {s:'NIKKEI',p:'38,820',c:'+0.44%',u:1},{s:'S&P500',p:'5,248',c:'+0.31%',u:1},
+  {s:'NASDAQ',p:'16,420',c:'-0.18%',u:0},{s:'VIX',p:'14.82',c:'-3.20%',u:0},
 ];
+const tkHtml=tks.map(t=>`<span class="ticker-item"><span class="ticker-sym">${t.s}</span><span class="ticker-price">${t.p}</span><span class="${t.u?'up':'dn'}">${t.c}</span></span>`).join('');
+document.getElementById('tk').innerHTML=tkHtml+tkHtml;
 
-let currentStage = 0;
-let pipelineRunning = false;
+// Marquee
+const mqi=['Statistical Arbitrage','High Frequency Trading','Machine Learning Alpha','Cross-Asset Momentum','Options Market Making','Crypto Derivatives'];
+const mqHtml=mqi.map(m=>`<span class="mq-item">${m} <span>◆</span></span>`).join('');
+document.getElementById('mq').innerHTML=mqHtml+mqHtml;
 
-function renderPipeline(activeIdx, failIdx = -1){
-  const container = document.getElementById('pipeline-stages');
-  container.innerHTML = STAGES.map((s, i) => {
-    let cls = 'pending';
-    if(i < activeIdx) cls = 'done';
-    else if(i === activeIdx && pipelineRunning) cls = 'running';
-    if(i === failIdx) cls = 'fail';
-    return `
-      <div class="stage ${cls}">
-        <div class="stage-icon">${cls==='done'?'✓':cls==='fail'?'✗':s.icon}</div>
-        <div class="stage-name">${s.name}</div>
-        <div class="stage-time">${cls==='done'||cls==='fail'?s.time:'—'}</div>
-      </div>`;
-  }).join('');
+// Scroll reveal
+const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:0.08});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// Performance chart
+function drawChart(){
+  const canvas=document.getElementById('pc');
+  if(!canvas)return;
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.parentElement.clientWidth;
+  const H=220;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+
+  const un=[100,112,108,135,158,189,176,210,245,268,298,342];
+  const nf=[100,108,104,122,138,152,144,160,178,186,202,218];
+  const lbs=['Jan\'19','Jul\'19','Jan\'20','Jul\'20','Jan\'21','Jul\'21','Jan\'22','Jul\'22','Jan\'23','Jul\'23','Jan\'24','Dec\'24'];
+  const pL=44,pR=16,pT=10,pB=28;
+  const cW=W-pL-pR,cH=H-pT-pB;
+  const all=[...un,...nf];
+  const mn=Math.min(...all)*0.95,mx2=Math.max(...all)*1.02;
+  const xp=i=>pL+(i/(lbs.length-1))*cW;
+  const yp=v=>pT+cH-((v-mn)/(mx2-mn))*cH;
+
+  // Grid
+  for(let i=0;i<=4;i++){
+    const y=pT+(i/4)*cH;
+    ctx.strokeStyle='rgba(61,58,53,0.5)';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(pL+cW,y);ctx.stroke();
+    ctx.fillStyle='#3d3a35';ctx.font=`9px DM Mono,monospace`;ctx.textAlign='right';
+    ctx.fillText(Math.round(mx2-(i/4)*(mx2-mn)),pL-6,y+3);
+  }
+
+  // Nifty
+  ctx.beginPath();ctx.strokeStyle='rgba(61,58,53,0.9)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  nf.forEach((v,i)=>i?ctx.lineTo(xp(i),yp(v)):ctx.moveTo(xp(i),yp(v)));
+  ctx.stroke();ctx.setLineDash([]);
+
+  // UN fill
+  const g=ctx.createLinearGradient(0,pT,0,pT+cH);
+  g.addColorStop(0,'rgba(201,168,76,0.18)');g.addColorStop(1,'rgba(201,168,76,0)');
+  ctx.beginPath();
+  un.forEach((v,i)=>i?ctx.lineTo(xp(i),yp(v)):ctx.moveTo(xp(i),yp(v)));
+  ctx.lineTo(xp(un.length-1),pT+cH);ctx.lineTo(xp(0),pT+cH);ctx.closePath();
+  ctx.fillStyle=g;ctx.fill();
+
+  // UN line
+  ctx.beginPath();ctx.strokeStyle='#c9a84c';ctx.lineWidth=2;
+  un.forEach((v,i)=>i?ctx.lineTo(xp(i),yp(v)):ctx.moveTo(xp(i),yp(v)));
+  ctx.stroke();
+
+  // Dots
+  un.forEach((v,i)=>{ctx.beginPath();ctx.arc(xp(i),yp(v),3,0,Math.PI*2);ctx.fillStyle='#c9a84c';ctx.fill()});
+
+  // Labels
+  ctx.fillStyle='#3d3a35';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';
+  lbs.forEach((l,i)=>{if(i%2===0)ctx.fillText(l,xp(i),H-8)});
 }
-renderPipeline(7);
-
-// Logs
-const logData = [
-  {ts:'09:41:02', level:'INFO', msg:'Pipeline triggered by git push to main'},
-  {ts:'09:41:03', level:'INFO', msg:'Agent assigned: jenkins-agent-03'},
-  {ts:'09:41:05', level:'INFO', msg:'Cloning repository github.com/ujwal/devsecops'},
-  {ts:'09:41:13', level:'PASS', msg:'Checkout complete — commit a3f9c1b'},
-  {ts:'09:41:14', level:'INFO', msg:'Running docker build --tag app:143'},
-  {ts:'09:41:56', level:'PASS', msg:'Docker image built successfully'},
-  {ts:'09:42:00', level:'INFO', msg:'SonarQube SAST analysis started'},
-  {ts:'09:43:15', level:'PASS', msg:'Code Quality: A  |  Bugs: 0  |  Vulns: 0'},
-  {ts:'09:43:16', level:'INFO', msg:'Checking Quality Gate status...'},
-  {ts:'09:43:38', level:'PASS', msg:'Quality Gate: PASSED ✓'},
-  {ts:'09:43:40', level:'INFO', msg:'Trivy scanning image for CVEs...'},
-  {ts:'09:43:58', level:'WARN', msg:'2 LOW severity CVEs detected — within threshold'},
-  {ts:'09:44:00', level:'PASS', msg:'Trivy scan passed — 0 CRITICAL, 0 HIGH'},
-  {ts:'09:44:01', level:'INFO', msg:'Signing image with cosign...'},
-  {ts:'09:44:04', level:'PASS', msg:'Image signed and pushed to ECR'},
-  {ts:'09:44:06', level:'INFO', msg:'kubectl apply -f k8s/deployment.yaml'},
-  {ts:'09:44:18', level:'INFO', msg:'Rolling update started — 1/3 pods updated'},
-  {ts:'09:44:25', level:'INFO', msg:'Rolling update — 2/3 pods updated'},
-  {ts:'09:44:32', level:'PASS', msg:'Rolling update — 3/3 pods healthy'},
-  {ts:'09:44:33', level:'PASS', msg:'Deployment complete. Run #143 SUCCESS ✓'},
-];
-
-function renderLogs(logs){
-  const body = document.getElementById('log-body');
-  body.innerHTML = logs.map(l =>
-    `<div class="log-line"><span class="log-ts">${l.ts}</span><span class="log-level ${l.level}">${l.level}</span><span class="log-msg">${l.msg}</span></div>`
-  ).join('');
-  body.scrollTop = body.scrollHeight;
-}
-renderLogs(logData);
-
-// Recent builds
-const builds = [
-  {num:143, name:'DevSecOps Pipeline', branch:'main', status:'running', dur:'3m 40s', ago:'now'},
-  {num:142, name:'Three-Tier App', branch:'feature/hpa', status:'pass', dur:'4m 02s', ago:'12m ago'},
-  {num:141, name:'EKS Microservices', branch:'main', status:'pass', dur:'5m 18s', ago:'34m ago'},
-  {num:140, name:'DevSecOps Pipeline', branch:'hotfix/auth', status:'fail', dur:'1m 44s', ago:'1h ago'},
-  {num:139, name:'Three-Tier App', branch:'main', status:'pass', dur:'4m 29s', ago:'2h ago'},
-  {num:138, name:'EKS Microservices', branch:'main', status:'pass', dur:'5m 01s', ago:'3h ago'},
-  {num:137, name:'DevSecOps Pipeline', branch:'main', status:'pass', dur:'3m 58s', ago:'4h ago'},
-];
-
-function statusColor(s){
-  if(s==='pass') return 'var(--green)';
-  if(s==='fail') return 'var(--red)';
-  return 'var(--amber)';
-}
-
-function renderBuilds(){
-  document.getElementById('builds-list').innerHTML = builds.map(b => `
-    <div class="build-row">
-      <div class="build-status" style="background:${statusColor(b.status)};${b.status==='pass'?'box-shadow:0 0 5px var(--green)':b.status==='running'?'animation:pulse 1.5s infinite':''}"></div>
-      <div class="build-num">#${b.num}</div>
-      <div class="build-info">
-        <div class="build-name">${b.name}</div>
-        <div class="build-meta">${b.branch}</div>
-      </div>
-      <div>
-        <div class="build-dur">${b.dur}</div>
-        <div class="build-time">${b.ago}</div>
-      </div>
-    </div>
-  `).join('');
-}
-renderBuilds();
-
-// TRIGGER BUILD SIMULATION
-let buildTimeout = null;
-let logIndex = 0;
-let liveLogs = [];
-
-const newLogLines = [
-  {level:'INFO', msg:'Pipeline triggered — Run #144'},
-  {level:'INFO', msg:'Agent assigned: jenkins-agent-01'},
-  {level:'INFO', msg:'Cloning repository...'},
-  {level:'PASS', msg:'Checkout complete — commit d9e2f4a'},
-  {level:'INFO', msg:'Running docker build --tag app:144'},
-  {level:'PASS', msg:'Docker image built successfully'},
-  {level:'INFO', msg:'Starting SonarQube SAST analysis...'},
-  {level:'PASS', msg:'Code Quality: A  |  Coverage: 84%'},
-  {level:'PASS', msg:'Quality Gate: PASSED ✓'},
-  {level:'INFO', msg:'Running Trivy vulnerability scan...'},
-  {level:'PASS', msg:'0 CRITICAL, 0 HIGH vulnerabilities found'},
-  {level:'INFO', msg:'Signing and pushing image to ECR...'},
-  {level:'PASS', msg:'Image signed successfully'},
-  {level:'INFO', msg:'Deploying to Kubernetes cluster...'},
-  {level:'INFO', msg:'Rolling update: 1/3 replicas updated'},
-  {level:'INFO', msg:'Rolling update: 2/3 replicas updated'},
-  {level:'PASS', msg:'Rolling update: 3/3 replicas healthy'},
-  {level:'PASS', msg:'Run #144 COMPLETE — SUCCESS ✓'},
-];
-
-function pad(n){return String(n).padStart(2,'0')}
-function nowTs(){
-  const d=new Date();
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-
-function triggerBuild(){
-  if(pipelineRunning) return;
-  pipelineRunning = true;
-  currentStage = 0;
-  liveLogs = [];
-  logIndex = 0;
-  document.getElementById('run-id').textContent = 'Run #144 · triggered by push';
-  document.getElementById('run-branch').textContent = 'main';
-  document.getElementById('triggerBtn').disabled = true;
-  document.getElementById('log-badge').textContent = '● LIVE';
-  document.getElementById('log-badge').className = 'panel-badge badge-live';
-  document.getElementById('last-updated').textContent = 'just now';
-
-  renderPipeline(0);
-
-  const stageTimings = [800, 1500, 2200, 1000, 1800, 1200, 1600];
-  const logTimings   = [100, 300, 600, 1000, 1600, 2200, 3200, 4000, 4800, 5400, 6200, 7000, 7600, 8200, 9000, 9800, 10500, 11200];
-
-  // Advance stages
-  let stageTime = 0;
-  STAGES.forEach((s, i) => {
-    stageTime += stageTimings[i];
-    setTimeout(() => {
-      currentStage = i + 1;
-      renderPipeline(i + 1);
-    }, stageTime);
-  });
-
-  // Stream logs
-  newLogLines.forEach((l, i) => {
-    setTimeout(() => {
-      liveLogs.push({ts: nowTs(), level: l.level, msg: l.msg});
-      renderLogs(liveLogs);
-    }, logTimings[i] || (i * 600));
-  });
-
-  // Finish
-  const total = stageTime + 600;
-  setTimeout(() => {
-    pipelineRunning = false;
-    document.getElementById('triggerBtn').disabled = false;
-    document.getElementById('log-badge').textContent = '✓ DONE';
-    document.getElementById('log-badge').className = 'panel-badge badge-ok';
-    document.getElementById('total-builds').textContent = '143';
-    document.getElementById('last-updated').textContent = 'just now';
-
-    // Add to recent builds
-    builds.unshift({num:144, name:'DevSecOps Pipeline', branch:'main', status:'pass', dur:'3m 52s', ago:'just now'});
-    builds.pop();
-    renderBuilds();
-  }, total);
-}
+window.addEventListener('load',drawChart);
+window.addEventListener('resize',drawChart);
 </script>
 </body>
 </html>
